@@ -6,29 +6,73 @@ This file creates your application.
 """
 
 from app import app
-from flask import render_template, request, redirect, url_for
-
+from flask import render_template, request, redirect, url_for, flash
+import smtplib
 
 ###
 # Routing for your application.
 ###
-
+app.secret_key = 'secret-key'
 @app.route('/')
 def home():
     """Render website's home page."""
     return render_template('home.html')
-
 
 @app.route('/about/')
 def about():
     """Render the website's about page."""
     return render_template('about.html', name="Mary Jane")
 
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method =='POST':
+        name = request.form['name']
+        email = request.form['email']
+        subj = request.form['subj']
+        msg = request.form['msg']
+        if send_email(name, email, subj, msg):
+            flash('Email has been sent')
+            return redirect(url_for('home'))
+        else:
+            flash('Oops! There was an error sending the email')
+    else:
+        return render_template('contact.html')
+
 
 ###
 # The functions below should be applicable to all Flask apps.
 ###
 
+def send_email(from_name, from_addr, subject, msg):
+    to_name = 'Karishma'
+    to_addr = 'username@gmail.com'
+    message =  """From: {} <{}>\n
+                To: {} <{}>\n\n
+                Subject: {}\n\n
+                {}
+                """
+    message_to_send = message.format(from_name, from_addr, to_name, to_addr, subject, msg)
+
+    # Credentials
+    username = 'username@gmail.com'
+    password = ''
+
+    # The actual mail send
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(username, password)
+    flag = False
+    try:
+        server.sendmail(from_addr, to_addr, message_to_send)
+    except:
+        flag = True
+    server.quit()
+    
+    if flag == True:
+        return False
+    else:
+        return True
+    
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
     """Send your static text file."""
